@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora Hipotecaria</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://live.zwidgets.com/js-sdk/1.0.5/ZohoEmbededAppSDK.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h2>🏠 Calculadora Hipotecaria</h2>
+
+        <label>💰 Valor del Inmueble:</label>
+        <input type="text" id="valorInmueble" placeholder="Ej: 200000000">
+
+        <label>📉 Cuota Inicial (%):</label>
+        <input type="text" id="cuotaInicial" placeholder="Ej: 20">
+
+        <label>💳 Tasa de Interés Anual (%):</label>
+        <input type="text" id="tasaInteres" placeholder="Ej: 12">
+
+        <label>📅 Plazo (años):</label>
+        <input type="text" id="plazo" placeholder="Ej: 15">
+
+        <button id="calcular">📊 Calcular Cuota</button>
+
+        <h3 id="resultado"></h3>
+
+        <table id="detallePago">
+            <thead>
+                <tr>
+                    <th>Descripción</th>
+                    <th>Valor</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td>Valor del Crédito</td><td id="credito"></td></tr>
+                <tr><td>Cuota Mensual</td><td id="cuota"></td></tr>
+                <tr><td>Total Pagado en el Plazo</td><td id="totalPago"></td></tr>
+            </tbody>
+        </table>
+
+        <h3>📜 Tabla de Amortización</h3>
+        <table id="tablaAmortizacion">
+            <thead>
+                <tr>
+                    <th>Mes</th>
+                    <th>Cuota</th>
+                    <th>Intereses</th>
+                    <th>Capital</th>
+                    <th>Saldo Restante</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <script>
+        document.querySelectorAll("input[type='text']").forEach(input => {
+            input.addEventListener("input", function () {
+                this.value = formatNumberInput(this.value);
+            });
+        });
+
+        function formatNumberInput(value) {
+            value = value.replace(/[^\d,.]/g, "");
+            value = value.replace(/,/g, ".");
+            return value;
+        }
+
+        function parseNumber(value) {
+            return parseFloat(value.replace(/\./g, "").replace(/,/g, "."));
+        }
+
+        document.getElementById('calcular').addEventListener('click', function() {
+            const valorInmueble = parseNumber(document.getElementById('valorInmueble').value);
+            const cuotaInicial = parseNumber(document.getElementById('cuotaInicial').value);
+            const tasaInteres = parseNumber(document.getElementById('tasaInteres').value) / 100;
+            const plazo = parseNumber(document.getElementById('plazo').value);
+
+            if (isNaN(valorInmueble) || isNaN(cuotaInicial) || isNaN(tasaInteres) || isNaN(plazo)) {
+                alert('⚠️ Completa todos los campos correctamente.');
+                return;
+            }
+
+            const valorCredito = valorInmueble - (valorInmueble * (cuotaInicial / 100));
+            const tasaMensual = tasaInteres / 12;
+            const numCuotas = plazo * 12;
+            const cuotaMensual = (valorCredito * tasaMensual) / (1 - Math.pow((1 + tasaMensual), -numCuotas));
+            const totalPagado = cuotaMensual * numCuotas;
+
+            document.getElementById('resultado').innerText = "📝 Detalle del Crédito Hipotecario:";
+            document.getElementById('credito').innerText = formatCurrency(valorCredito);
+            document.getElementById('cuota').innerText = formatCurrency(cuotaMensual);
+            document.getElementById('totalPago').innerText = formatCurrency(totalPagado);
+
+            generarTablaAmortizacion(valorCredito, cuotaMensual, tasaMensual, numCuotas);
+        });
+
+        function generarTablaAmortizacion(saldo, cuotaMensual, tasaMensual, numCuotas) {
+            const tbody = document.querySelector("#tablaAmortizacion tbody");
+            tbody.innerHTML = "";
+
+            for (let i = 1; i <= numCuotas; i++) {
+                let interes = saldo * tasaMensual;
+                let capital = cuotaMensual - interes;
+                saldo -= capital;
+
+                const fila = `
+                    <tr>
+                        <td>${i}</td>
+                        <td>${formatCurrency(cuotaMensual)}</td>
+                        <td>${formatCurrency(interes)}</td>
+                        <td>${formatCurrency(capital)}</td>
+                        <td>${formatCurrency(Math.max(saldo, 0))}</td>
+                    </tr>
+                `;
+                tbody.innerHTML += fila;
+            }
+        }
+
+        function formatCurrency(value) {
+            return `$${value.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}`;
+        }
+    </script>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 15px;
+            background-color: #121212;
+            color: #ffffff;
+            text-align: center;
+        }
+        .container {
+            max-width: 500px;
+            margin: auto;
+            padding: 20px;
+            background-color: #1e1e1e;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.5);
+            border-radius: 10px;
+        }
+        h2 { color: #4CAF50; }
+        label {
+            display: block;
+            margin-top: 10px;
+            font-weight: bold;
+            text-align: left;
+        }
+        input, button {
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+            border-radius: 5px;
+            box-sizing: border-box;
+            background-color: #333;
+            color: white;
+            border: 1px solid #4CAF50;
+        }
+        button {
+            background-color: #4CAF50;
+            cursor: pointer;
+            margin-top: 15px;
+            font-size: 16px;
+        }
+        button:hover { background-color: #45a049; }
+        table {
+            width: 100%;
+            margin-top: 20px;
+            border-collapse: collapse;
+            background-color: #333;
+            color: white;
+        }
+        th, td {
+            border: 1px solid #4CAF50;
+            padding: 8px;
+            text-align: center;
+        }
+        th { background-color: #4CAF50; }
+    </style>
+</body>
+</html>
